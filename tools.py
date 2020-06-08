@@ -8,25 +8,29 @@ def bruit_gauss(signal, w, m1, sig1, m2, sig2):
     :param signal: Le signal a bruiter (un numpy array d'int)
     :param w: vecteur dont la première composante est la valeur de la classe 1 et la deuxième est la valeur de la classe 2
     :param m1: La moyenne de la première gaussienne
-    :param sig1: La variance de la première gaussienne
+    :param sig1: L'écart type de la première gaussienne
     :param m2: La moyenne de la deuxième gaussienne
-    :param sig2: La variance de la deuxième gaussienne
+    :param sig2: L'écart type de la deuxième gaussienne
     :return: le signal bruité (numpy array de float)
     """
-    return None
+    signal_noisy = (signal == w[0]) * np.random.normal(m1, sig1, signal.shape) + \
+                   (signal == w[1]) * np.random.normal(m2, sig2, signal.shape)
+    return signal_noisy
 
 
 def gauss(signal_noisy, m1, sig1, m2, sig2):
     """
-    Cette fonction transforme le signal bruité per les densité des deux gaussiennes du bruit
+    Cette fonction transforme le signal bruitée en appliquant à celui-ci deux densitées gausiennes
     :param signal_noisy: Le signal bruité (numpy array 1D)
     :param m1: La moyenne de la première gaussienne
-    :param sig1: La variance de la première gaussienne
+    :param sig1: L'écart type de la première gaussienne
     :param m2: La moyenne de la deuxième gaussienne
-    :param sig2: La variance de la deuxième gaussienne
+    :param sig2: L'écart type de la deuxième gaussienne
     :return: numpy array (longeur de signal_noisy)*2 qui correspond aux valeurs des densité gaussiennes pour chaque élément de signal noisy
     """
-    return None
+    gauss1 = (1 / (sig1 * sqrt(2 * pi))) * np.exp(-(1 / 2) * (((signal_noisy - m1) / sig1) ** 2))
+    gauss2 = (1 / (sig2 * sqrt(2 * pi))) * np.exp(-(1 / 2) * (((signal_noisy - m2) / sig2) ** 2))
+    return np.stack((gauss1, gauss2), axis=1)
 
 
 def calc_erreur(signal1, signal2):
@@ -36,7 +40,7 @@ def calc_erreur(signal1, signal2):
     :param signal2: le deuxième signal, un numpy array
     :return: La différence entre les deux signaux (un float)
     """
-    return None
+    return np.sum(signal1 != signal2) / np.prod(signal2.shape)
 
 
 def get_peano_index(dSize):
@@ -62,16 +66,16 @@ def get_peano_index(dSize):
     offsetLookup = np.array([[1, 1, 0, 0], [1, 0, 1, 0]])
     for i in range(int(log2(dSize))):
         xTmp = np.array([(xTmp - 1) * 2 + offsetLookup[0, orderLookup[0, dirTmp]] + 1,
-            (xTmp - 1) * 2 + offsetLookup[0, orderLookup[1, dirTmp]] + 1,
-            (xTmp - 1) * 2 + offsetLookup[0, orderLookup[2, dirTmp]] + 1,
-            (xTmp - 1) * 2 + offsetLookup[0, orderLookup[3, dirTmp]] + 1])
+                         (xTmp - 1) * 2 + offsetLookup[0, orderLookup[1, dirTmp]] + 1,
+                         (xTmp - 1) * 2 + offsetLookup[0, orderLookup[2, dirTmp]] + 1,
+                         (xTmp - 1) * 2 + offsetLookup[0, orderLookup[3, dirTmp]] + 1])
 
         yTmp = np.array([(yTmp - 1) * 2 + offsetLookup[1, orderLookup[0, dirTmp]] + 1,
-            (yTmp - 1) * 2 + offsetLookup[1, orderLookup[1, dirTmp]] + 1,
-            (yTmp - 1) * 2 + offsetLookup[1, orderLookup[2, dirTmp]] + 1,
-            (yTmp - 1) * 2 + offsetLookup[1, orderLookup[3, dirTmp]] + 1])
+                         (yTmp - 1) * 2 + offsetLookup[1, orderLookup[1, dirTmp]] + 1,
+                         (yTmp - 1) * 2 + offsetLookup[1, orderLookup[2, dirTmp]] + 1,
+                         (yTmp - 1) * 2 + offsetLookup[1, orderLookup[3, dirTmp]] + 1])
 
-        dirTmp = np.array([dirLookup[0, dirTmp],dirLookup[1, dirTmp], dirLookup[2, dirTmp], dirLookup[3, dirTmp]])
+        dirTmp = np.array([dirLookup[0, dirTmp], dirLookup[1, dirTmp], dirLookup[2, dirTmp], dirLookup[3, dirTmp]])
 
         xTmp = xTmp.T.flatten()
         yTmp = yTmp.T.flatten()
@@ -79,7 +83,7 @@ def get_peano_index(dSize):
 
     x = - xTmp
     y = - yTmp
-    return x,y
+    return x, y
 
 
 def peano_transform_img(img):
@@ -89,7 +93,7 @@ def peano_transform_img(img):
     :param img: une image (donc un numpy array 2 dimensions)
     :return: un numpy array 1 dimension
     """
-    assert img.shape[0]==img.shape[1], 'veuillez donner une image carrée en entrée'
+    assert img.shape[0] == img.shape[1], 'veuillez donner une image carrée en entrée'
     assert log2(img.shape[0]).is_integer(), 'veuillez donne rune image dont la dimension est une puissance de 2'
     idx = get_peano_index(img.shape[0])
     return img[idx[0], idx[1]]
@@ -99,11 +103,12 @@ def transform_peano_in_img(signal, dSize):
     """
     Cette fonction prend un signal 1D en entrée et une taille, et le transforme en image carrée 2D selon le parcours de Hilbert-Peano
     :param img: un signal 1D
+    :param dSize: largeur ou longueur de l'image en pixel (peu importe, la fonction de fonctionne qu'avec des images carrées)
     :return: une image (donc un numpy array 2 dimensions)
     """
-    assert dSize==int(sqrt(signal.shape[0])), 'veuillez donner un signal ayant pour dimension dSize^2'
+    assert dSize == int(sqrt(signal.shape[0])), 'veuillez donner un signal ayant pour dimension dSize^2'
     idx = get_peano_index(dSize)
-    img = np.zeros((dSize,dSize))
+    img = np.zeros((dSize, dSize))
     img[idx[0], idx[1]] = signal
     return img
 
@@ -111,7 +116,7 @@ def transform_peano_in_img(signal, dSize):
 def get_line_index(dSize):
     """
     Cette fonction permet d'obtenir l'ordre de parcours des pixels d'une image carrée selon un parcours ligne par ligne
-    :param dSize: largeur ou longueur de l'image en pixel (peu importe, la fonction de fonctionne qu'avec des images carrées)
+    :param dSize: largeur ou longueur de l'image en pixel (peu importe, la fonction ne fonctionne qu'avec des images carrées)
     :return: une liste de taille 2*dSize*dSize qui correspond aux coordonnées de chaque pixel ordonnée selon le parcours ligne par ligne
     """
     return [a.flatten() for a in np.indices((dSize, dSize))]
@@ -123,7 +128,7 @@ def line_transform_img(img):
     :param img: une image (donc un numpy array 2 dimensions)
     :return: un numpy array 1 dimension
     """
-    assert img.shape[0]==img.shape[1], 'veuillez donner une image carrée en entrée'
+    assert img.shape[0] == img.shape[1], 'veuillez donner une image carrée en entrée'
     idx = get_line_index(img.shape[0])
     return img[idx[0], idx[1]]
 
@@ -132,10 +137,11 @@ def transform_line_in_img(signal, dSize):
     """
     Cette fonction prend un signal 1D en entrée et une taille, et le transforme en image carrée 2D selon le parcours ligne par ligne
     :param img: un signal 1D
+    :param dSize: largeur ou longueur de l'image en pixel (peu importe, la fonction de fonctionne qu'avec des images carrées)
     :return: une image (donc un numpy array 2 dimensions)
     """
-    assert dSize==int(sqrt(signal.shape[0])), 'veuillez donner un signal ayant pour dimension dSize^2'
+    assert dSize == int(sqrt(signal.shape[0])), 'veuillez donner un signal ayant pour dimension dSize^2'
     idx = get_line_index(dSize)
-    img = np.zeros((dSize,dSize))
+    img = np.zeros((dSize, dSize))
     img[idx[0], idx[1]] = signal
     return img
